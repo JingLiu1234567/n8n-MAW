@@ -105,6 +105,7 @@ SELECT date_format(date, '%Y-%m') AS month,
        SUM(sales) AS total_sales
 FROM site_data
 GROUP BY 1;
+```
 
 ---
 
