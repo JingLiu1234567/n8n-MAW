@@ -1,55 +1,173 @@
-# Campaign Marketing Automation Workflow (CMAW)
+# 🌟 n8n Marketing Automation Workflow (n8n-MAW)
 
-Automated case analysis, metrics extraction, multi-sheet data processing, SQL-driven insights, and visual analytics for e-commerce marketing — powered by n8n, Google Sheets, and OpenAI.
+**CMW (Campaign Marketing Automation Workflow)** is an **end-to-end AI-powered analysis system** built with **n8n, Google Sheets, and OpenAI**.
+
+It transforms a *raw natural-language marketing case* into structured analytical metrics, loads selected datasets, and automatically generates **MySQL-ready SQL queries**.
+
+---
 
 ## 🚀 Overview
-CMAW (Campaign Marketing Automation Workflow) is an end-to-end automation system designed for e-commerce and digital marketing analysts.
+CMAW automates the entire analytics pipeline:
 
-The workflow performs **three major tasks**:
-
----
-
-## 1️⃣ Case → Analytical Questions & Metrics (Automated Requirement Extraction)
-
-A user submits a free-text marketing case (e.g., campaign brief, client scenario, e-commerce analysis request).
-
-The workflow automatically:
-- ✔️ Identifies key analytical questions  
-- ✔️ Maps them to measurable metrics  
-- ✔️ Generates a structured JSON output  
-- ✔️ Produces a formatted, human-readable summary  
-- ✔️ Sends the result to your Gmail inbox  
-
-This step is powered by **n8n + OpenAI Agent**.
+- **User inputs one natural-language case**（中文 / English）
+- **AI extracts analytical question + required metrics**
+- **Result is saved to Google Sheets**
+- **Analyst selects relevant databases**
+- **Workflow loads all selected datasets**
+- **AI generates MySQL-compatible SQL queries**
+- **Formatted SQL is emailed as a file attachment**
 
 ---
 
-## 2️⃣ Multi-Sheet Data Loading & SQL-Based Analysis
+# 🧩 Workflow Architecture
+<img width="3840" height="1732" alt="46cf12916a48001dd14f79003df683c7" src="https://github.com/user-attachments/assets/6c8ca9c1-ff26-4039-b494-37592c9d97f2" />
 
-The workflow reads two Google Sheets datasets:
-
-| Sheet Name     | Content                                   | Used For |
-|----------------|-------------------------------------------|----------|
-| site_data      | date, sessions, orders, sales, category   | Sales Volume & Web Traffic |
-| keyword_data   | keyword, search volume, date              | Keyword Search Volume |
-
-Using these datasets, a second AI Agent (or SQL node) can automatically:
-- Generate SQL-like queries  
-- Aggregate metrics (monthly/seasonal)  
-- Join datasets on date  
-- Produce analytical tables for further visualization  
+The system consists of **six major components**:
 
 ---
 
-## 3️⃣ Visual Analytics (Charts & Trend Lines)
+## 1️⃣ Natural-Language Case Input (Trigger Form)
 
-Based on the SQL output, the workflow can generate:
-- 📈 Seasonal sales trends  
-- 📉 Demand fluctuations  
-- 🔎 Keyword search trends  
-- 📊 Traffic → conversion movement  
-- 🏷️ Category-level performance charts  
+The user submits *one* free-text case:
 
-These charts can be displayed inside n8n, exported, or sent via email.
+Examples:
+
+- “分析客户 A 在 2022 年的季节性销售”
+- “What are seasonal demand trends for Client A?”
+- “Analyze sessions → conversion performance for Campaign B”
+
+This triggers the workflow.
 
 ---
+
+## 2️⃣ Automatic Question & Metrics Extraction (AI Agent)
+
+- Understanding of case intent (中文 or English)
+- Inference of essential metrics like a senior analyst
+- Field validation to ensure metrics exist in uploaded databases
+- JSON structuring for downstream processing
+
+---
+
+## 3️⃣ Automatic Saving to Google Sheets
+
+The workflow logs:
+
+- Extracted question
+- Identified metrics
+- Timestamp
+
+into a Google Sheet for versioning and collaboration.
+
+---
+
+## 4️⃣ Analyst Chooses Relevant Databases (Google Sheets)
+
+You may upload **any number of datasets**.
+
+### Common sheets:
+
+| Sheet Name       | Content                                      |
+|------------------|----------------------------------------------|
+| `site_data`      | date, sessions, orders, sales, category      |
+| `keyword_data`   | keyword, search_volume, date                 |
+| *(optional)* more | campaign, SKU views, ads data, etc.          |
+
+---
+
+### 🔄 Replacing / Adding Databases
+
+You may freely:
+
+- Replace sheet contents  
+- Point a **Read Sheet** node to a new sheet  
+- Add additional sheet nodes  
+
+**No code change is needed.**  
+`Code2` automatically detects available fields and sends them to the SQL Agent.
+
+---
+
+## 5️⃣ Automatic SQL Generation (SQL Agent)
+
+The SQL Agent uses:
+
+- Extracted question  
+- Extracted metrics  
+- Uploaded database fields  
+- Auto-detected date ranges  
+- MySQL-compatible time grain rules  
+
+It outputs multi-level seasonal analysis SQL, for example:
+
+```sql
+SELECT date_format(date, '%Y-%m') AS month,
+       SUM(sales) AS total_sales
+FROM site_data
+GROUP BY 1;
+
+---
+
+## 6️⃣ SQL Formatting & Gmail Delivery (Code3)
+
+Code3 formats the SQL:
+
+- Adds question at the top  
+- Labels each metric & time grain  
+- Cleans and formats SQL  
+- Generates a downloadable `.sql` file  
+- Emails it to your inbox  
+
+---
+
+# 🔥 End-to-End Summary
+
+✔ User inputs **one natural-language case**  
+✔ AI identifies **the question & metrics**  
+✔ Google Sheets stores **the results**  
+✔ Workflow loads **chosen datasets**  
+✔ AI generates **clean MySQL SQL**  
+✔ SQL is **emailed automatically**  
+
+A complete intelligent analytics pipeline, ideal for:
+
+- E-commerce analysis  
+- Campaign insights  
+- Traffic → conversion analysis  
+- Seasonal performance analysis  
+- Automated BI reporting  
+
+---
+
+# 📁 Repository Structure
+/Campaign Marketing Analysis.json   → n8n workflow export  
+/README.md                         → Documentation  
+/screenshots/                      → Workflow images  
+
+---
+
+# 🛠 Setup Guide
+
+1. Import workflow JSON into n8n  
+2. Connect Google Sheets credentials  
+3. Upload or link your datasets  
+4. Connect Gmail  
+5. Trigger workflow  
+6. Receive formatted SQL  
+
+---
+
+# 🧱 Database Maintenance Guide
+
+### Replace a dataset:
+
+- Replace the content inside the same Google Sheet  
+- **OR** modify the **Read Sheet** node to point to a new sheet  
+- No code changes needed  
+
+### Add a dataset:
+
+- Create a new Google Sheet  
+- Duplicate a **Read Sheet** node  
+- Connect it to **Merge → Code2**  
+- `Code2` will automatically detect fields  
