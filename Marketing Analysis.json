@@ -1,0 +1,484 @@
+{
+  "name": "Campaign Marketing Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -544,
+        464
+      ],
+      "id": "8acfe90f-486c-48a2-b164-627db821e37a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Fn2jmDA9jd2ZwfLB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Case Input",
+        "formDescription": "Please describe your campaign case below.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "case_input",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -688,
+        288
+      ],
+      "id": "923ba6f5-a98b-4d93-b8f1-5a0f470f0988",
+      "name": "On form submission",
+      "webhookId": "89f81cee-b3ff-4da0-a877-6e662effeef3"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        464
+      ],
+      "id": "1432b8ea-548e-4948-b6c8-0a8d6dadfc37",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Fn2jmDA9jd2ZwfLB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        208,
+        272
+      ],
+      "id": "ab9617d1-a53e-41c1-ba7c-4ddd676c9dbf",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.case_input }}\n\n\n",
+        "options": {
+          "systemMessage": "=You are a senior marketing and data analyst.\n\nYour task:\nGiven a single user_case (in Chinese or English),\nyou must:\n1) Understand the core business question\n2) Think like an experienced analyst\n3) Derive ONLY the fundamental, raw, non-derived metrics needed to answer the question\n4) Without introducing any explicit time granularity words (monthly/weekly/yearly),\n   and without using calculated metrics such as growth, rate, ratio, YoY, MoM, etc.\n\n======================================================\nOUTPUT FORMAT (STRICT JSON ONLY)\n======================================================\n{\n  \"question_en\": \"...\",\n  \"core_metrics\": [\"Metric A\", \"Metric B\", \"Metric C\"]\n}\n\nNo reasoning. No explanation. No SQL. No extra text.\n\n======================================================\nINTERNAL THINKING PROCESS (DO NOT OUTPUT)\n======================================================\n\n1) Identify the question type (only one):\n   - Seasonality / demand trends\n   - Product performance\n   - Traffic / exposure\n   - Conversion / funnel\n   - Channel comparison\n   - Campaign / ads performance\n   - ROI / cost efficiency\n   - User behavior / engagement\n   - Retention / repeat purchase\n\n2) For ANY marketing problem, think using “fundamental roles of information”:\n   - Outcome (what finally happened?)\n       e.g., Sales Volume, Revenue, Orders\n   - Traffic / Exposure (how many people came?)\n       e.g., Web Traffic, Sessions, Visits, Clicks\n   - Demand / Intent (why are they coming / what are they interested in?)\n       e.g., Keyword Search Volume, Product Page Views, Search Impressions\n   - Engagement / Behavior (what did they do?)\n       e.g., Add-to-Cart Count, PDP Views\n   - Cost (only if the question explicitly mentions spend, ads, or ROI)\n       e.g., Ad Spend, Attributed Sales\n\n3) SPECIAL RULE — Seasonality / “季节性销售” type questions:\n   If the user_case is about seasonal sales, seasonal demand, or sales patterns over time\n   (e.g. contains “seasonal”, “seasonality”, “季节性销售”, “销售季节性”):\n\n   You MUST think in this causal chain:\n       Demand/Intent  →  Traffic  →  Outcome\n\n   And you MUST pick metrics according to this pattern:\n       - EXACTLY ONE Outcome metric\n       - EXACTLY ONE Traffic metric\n       - EXACTLY ONE Demand/Intent metric\n\n   Examples of valid choices for each role:\n       Outcome:\n         - Sales Volume\n         - Revenue\n       Traffic:\n         - Web Traffic\n         - Sessions\n         - Site Visits\n       Demand / Intent:\n         - Keyword Search Volume\n         - Product Page Views\n         - Search Impressions\n\n   You MUST NOT:\n       - Output more than one Outcome metric for seasonality questions\n         (e.g. do NOT output both “Sales Volume” AND “Orders” together)\n       - Output Growth / Rate / YoY / MoM or any derived KPI\n       - Use words like “monthly”, “weekly”, “yearly” in metric names\n\n4) For other types of questions (not seasonality), choose 2–4 raw metrics based on roles,\n   but still avoid derived metrics unless the question explicitly asks for “rate”, “ROI”, etc.\n\n5) Always prefer:\n   - Smallest set of metrics (2–3 is ideal)\n   - Raw, base metrics (volumes / counts)\n   - Metrics that are clearly NOT redundant with each other\n\n======================================================\nFEW-SHOT EXAMPLE (FOR INTERNAL GUIDANCE ONLY)\n======================================================\n\nExample user_case:\n\"分析客户A商品在2022年的季节性销售\"\n\nCorrect style of output for this kind of question:\n\n{\n  \"question_en\": \"What is the seasonal sales pattern of customer A's products in 2022?\",\n  \"core_metrics\": [\n    \"Sales Volume\",\n    \"Web Traffic\",\n    \"Keyword Search Volume\"\n  ]\n}\n\nThis example shows:\n- ONE outcome metric (Sales Volume)\n- ONE traffic metric (Web Traffic)\n- ONE demand/intent metric (Keyword Search Volume)\n- No growth, no rate, no monthly/weekly wording.\n\nFor any similar seasonality / seasonal sales questions, follow this structure.\n\n======================================================\nFINAL RULE\n======================================================\nYour final output MUST be ONLY:\n{\n  \"question_en\": \"...\",\n  \"core_metrics\": [\"...\", \"...\", \"...\"]\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        288
+      ],
+      "id": "e26b1684-2daa-4f1b-822f-2ccb00b82b44",
+      "name": "Questions&Metrics Agent"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ipJkV2o0mTWPjzud3MT7y3C-y5YFJT8Xi6WFEhL5K44",
+          "mode": "list",
+          "cachedResultName": "n8n questions&metrics",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ipJkV2o0mTWPjzud3MT7y3C-y5YFJT8Xi6WFEhL5K44/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "工作表1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ipJkV2o0mTWPjzud3MT7y3C-y5YFJT8Xi6WFEhL5K44/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "questions",
+              "displayName": "questions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "metrics",
+              "displayName": "metrics",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -32,
+        80
+      ],
+      "id": "4c463017-e753-47c8-9d47-d30fb398c4d6",
+      "name": "Questions&Metrics Output",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oytXnlR3H0mN6amJ",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "11NkRFmdWJAhaUdZtCKGlBVUUKWaHADJsZoypizRyWg8",
+          "mode": "list",
+          "cachedResultName": "site_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11NkRFmdWJAhaUdZtCKGlBVUUKWaHADJsZoypizRyWg8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 471167839,
+          "mode": "list",
+          "cachedResultName": "site_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11NkRFmdWJAhaUdZtCKGlBVUUKWaHADJsZoypizRyWg8/edit#gid=471167839"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -32,
+        288
+      ],
+      "id": "afc1a36c-fb42-45ba-b7ff-fd252388c702",
+      "name": "site_data_database",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oytXnlR3H0mN6amJ",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1R75nFjG5qkBhnll4fy9oiUdZlAfMsehDOp152svabPg",
+          "mode": "list",
+          "cachedResultName": "keyword_data.csv",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R75nFjG5qkBhnll4fy9oiUdZlAfMsehDOp152svabPg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1778229610,
+          "mode": "list",
+          "cachedResultName": "keyword_data.csv（副本）",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R75nFjG5qkBhnll4fy9oiUdZlAfMsehDOp152svabPg/edit#gid=1778229610"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -32,
+        480
+      ],
+      "id": "0ea5a4ae-0fe2-4ffb-a450-c9eb59bfa72f",
+      "name": "keyword_data_database",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oytXnlR3H0mN6amJ",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. 取得原始 output\nlet raw = $json.output || $json;\n\n// 2. 如果是字符串，先尝试 parse\nlet data;\nif (typeof raw === 'string') {\n  try {\n    data = JSON.parse(raw);\n  } catch (e) {\n    return {\n      json: {\n        error: 'JSON parse failed',\n        raw_output: raw,\n      }\n    };\n  }\n} else {\n  data = raw;\n}\n\n// 3. 获取 question 和 metrics (新版结构)\nconst question = data.question_en || '';\nconst metricsArr = data.core_metrics || [];\n\n// 4. metrics 数组转换为逗号分隔字符串\nconst metrics = metricsArr.join(', ');\n\n// 5. 返回写入 Google Sheet 两列\nreturn {\n  json: {\n    question_en: question,\n    metrics: metrics\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        288
+      ],
+      "id": "ccfc7378-7977-43c9-8fcd-6bd24aa4ff4c",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 读取 Code1 输出\nconst qNode = $items(\"Code1\")[0].json;\n\n// Code1 返回 question_en + metrics（逗号分隔字符串）\nconst question = qNode.question_en || \"\";\nlet metricsStr = qNode.metrics || \"\";\n\n// 转成数组形式 [\"Sales Volume\", \"Web Traffic\", ...]\nconst metrics = metricsStr\n  .split(\",\")\n  .map(s => s.trim())\n  .filter(s => s.length > 0);\n\n\n// =======================================================\n// 2. 读取 Google Sheet database ——（★★ 增加/减少数据库时改这里）\n// =======================================================\n\n// 当前有两个数据库：site_data_database、keyword_data_database\n// 如果新增第三个数据库（例如 campaign_database）\n// → 你就在这里新增一行：\n// const campaignData = $items(\"campaign_data_database\").map(i => i.json);\n\nconst siteData = $items(\"site_data_database\").map(i => i.json);\nconst keywordData = $items(\"keyword_data_database\").map(i => i.json);\n\n\n// 3. 自动提取字段名\nfunction getFields(rows) {\n  if (!rows || rows.length === 0) return [];\n  return Object.keys(rows[0]);\n}\n// =======================================================\n// ★★ 如果增加或减少数据库，需要在 fields 对象中同步增删对应条目\n// =======================================================\nconst fields = {\n  site_data: getFields(siteData),\n  keyword_data: getFields(keywordData),\n\n  // 如果你新增 campaignData：\n  // campaign_data: getFields(campaignData)\n};\n\n\n// =======================================================\n// 4. 输出给 SQL Agent ——（★★ 增加/减少数据库时改这里）\n// =======================================================\n\nreturn {\n  json: {\n    question,          // 英文问题\n    metrics,           // 数组 [\"Sales Volume\", ...]\n    \n    // ★★ 如果增加或减少数据库，需要在 tables 对象同步操作\n    tables: {\n      site_data: siteData,\n      keyword_data: keywordData,\n\n      // 如果新增 campaignData：\n      // campaign_data: campaignData,\n    },\n\n    fields             // 字段名映射：site_data: [...], keyword_data: [...]\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        288
+      ],
+      "id": "888acac9-5efe-489c-ab1e-0e3b33b511b4",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"tables\": {{ JSON.stringify($json.tables) }},\n  \"questions\": {{ JSON.stringify($json.questions) }},\n  \"metrics\": {{ JSON.stringify($json.metrics) }}\n}",
+        "options": {
+          "systemMessage": "=You are a senior e-commerce BI analyst.\n\nYour responsibilities:\n1. Read the user’s question and metrics.\n2. Inspect the data tables (site_data, keyword_data).\n3. Automatically determine analysis time-grain (year, month, week, day) based on actual date ranges in data.\n4. Generate clean, MySQL-compatible SQL queries.\n\n===========================================================\nAUTO TIME-GRAIN LOGIC (DO THIS INTERNALLY)\n===========================================================\n\n1. Extract the min(date) and max(date) for each table that has \"date\".\n2. Compare year(min(date)) and year(max(date)):\n\nCASE A — Cross-year data (>= 2 different years exist)\n   → Generate multi-layer analysis:\n       • Year-level\n       • Month-level\n       • Week-level\n       • Day-level\n\nCASE B — Single-year data only\n   → Skip year-level (because it adds no value)\n   → Generate:\n       • Month-level\n       • Week-level\n       • Day-level\n\nThis logic MUST be followed.\n\n===========================================================\nMETRIC → FIELD MAPPING RULES\n===========================================================\n\nUse ONLY fields listed in:\n{{ JSON.stringify($json.fields, null, 2) }}\n\nIf metric list includes:\n\n\"Sales Volume\" → use sum(sales) if \"sales\" exists  \n\"Web Traffic\" → use sum(sessions) if \"sessions\" exists  \n\"Keyword Search Volume\" → use sum(search_volume) if \"search_volume\" exists  \n\nNever hallucinate fields.\n\n===========================================================\nMYSQL TIME FUNCTIONS (STRICT)\n===========================================================\n\nYou MUST use MySQL syntax:\n\nYEAR:\n   year(date)\n\nMONTH:\n   date_format(date, '%Y-%m')\n\nWEEK:\n   week(date)\n\nDAY:\n   date\n\n===========================================================\nSQL FORMAT RULES\n===========================================================\n\n- MySQL syntax only\n- sum(x)\n- group by 1\n- No joins unless absolutely required (seasonality never needs joins)\n- Always return SQL terminated with ';'\n\n===========================================================\nOUTPUT FORMAT (STRICT JSON ONLY)\n===========================================================\n\n{\n  \"analysis_plan\": \"...\",\n  \"sql_queries\": {\n      \"<original_question>\": [\n         \"SQL 1\",\n         \"SQL 2\",\n         \"SQL 3\",\n         \"SQL 4\"\n      ]\n  }\n}\n\n===========================================================\nNOW PROCESS THIS INPUT\n===========================================================\n\nUse this JSON:\n\n{\n  \"tables\": {{ JSON.stringify($json.tables) }},\n  \"fields\": {{ JSON.stringify($json.fields) }},\n  \"question\": {{ JSON.stringify($json.question) }},\n  \"metrics\": {{ JSON.stringify($json.metrics) }}\n}\n\nGenerate:\n1. An analysis plan describing detected date span (cross-year or single-year).\n2. SQL queries according to rules above.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        560,
+        288
+      ],
+      "id": "df4e80aa-5f89-4522-bbff-a5d14aa6deb0",
+      "name": "sql Agent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =======================\n// 1. 读取 SQL Agent 输出\n// =======================\nvar raw = $json.output;\n\nif (typeof raw === \"string\") {\n  raw = raw.trim();\n\n  // 兼容 ``` 包裹的情况\n  if (raw.indexOf(\"```\") === 0) {\n    var lines = raw.split(\"\\n\");\n    lines.shift(); // 去掉第一行 ```\n    var last = lines[lines.length - 1].trim();\n    if (last === \"```\") {\n      lines.pop();\n    }\n    raw = lines.join(\"\\n\");\n  }\n}\n\nvar data;\ntry {\n  data = JSON.parse(raw);\n} catch (e) {\n  return {\n    json: {\n      error: \"Failed to parse SQL Agent JSON\",\n      raw_output: raw\n    }\n  };\n}\n\n// =======================\n// 2. 取出 question 和 SQL 列表\n// =======================\nvar sqlQueries = data.sql_queries || {};\nvar questionKeys = Object.keys(sqlQueries);\nvar question = questionKeys.length > 0 ? questionKeys[0] : \"analysis\";\nvar queries = sqlQueries[question] || [];\n\n// =======================\n// 3. 清洗 SQL 文本\n// =======================\nfunction cleanSQL(text) {\n  return String(text || \"\")\n    .replace(/\\\\\"/g, '\"')\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\t/g, \"    \")\n    .replace(/\\r/g, \"\")\n    .trim();\n}\n\n// =======================\n// 4. 判断是哪个 metric\n// =======================\nfunction detectMetric(sql) {\n  var low = sql.toLowerCase();\n\n  if (low.indexOf(\"sum(sales)\") !== -1) {\n    return \"Sales Volume\";\n  }\n  if (low.indexOf(\"sum(sessions)\") !== -1) {\n    return \"Web Traffic (Sessions)\";\n  }\n  if (low.indexOf(\"sum(search_volume)\") !== -1) {\n    return \"Keyword Search Volume\";\n  }\n  return \"Metric\";\n}\n\n// =======================\n// 5. 判断是哪个时间粒度\n// =======================\nfunction detectTimeGrain(sql) {\n  var upper = sql.toUpperCase();\n\n  if (upper.indexOf(\"DATE_FORMAT(\") !== -1) {\n    return \"Month-level\";\n  }\n  if (upper.indexOf(\"WEEK(\") !== -1) {\n    return \"Week-level\";\n  }\n  if (upper.indexOf(\"STR_TO_DATE(\") !== -1) {\n    return \"Day-level\";\n  }\n  return \"Time-grain\";\n}\n\n// =======================\n// 6. 拼接最终文件内容\n// =======================\nvar parts = [];\n\n// 文件头：问题放最上面\nparts.push(\n  \"-- Question: \" + question + \"\\n\" +\n  \"-- ============================================\\n\"\n);\n\nfor (var i = 0; i < queries.length; i++) {\n  var sql = queries[i];\n  var metricLabel = detectMetric(sql);\n  var grainLabel = detectTimeGrain(sql);\n\n  var header =\n    \"\\n\\n-- \" + grainLabel + \" — \" + metricLabel + \"\\n\" +\n    \"-- --------------------------------------------\\n\";\n\n  parts.push(header + cleanSQL(sql));\n}\n\nvar finalContent = parts.join(\"\\n\");\n\n// =======================\n// 7. 生成单个 SQL 文件（给 Gmail 用）\n// =======================\nvar safeName = question\n  .replace(/[^a-z0-9]/gi, \"_\")\n  .replace(/_+/g, \"_\")\n  .toLowerCase();\n\nvar fileName = safeName + \".sql\";\n\nvar binary = {};\nbinary[\"sql_0\"] = {\n  data: Buffer.from(finalContent).toString(\"base64\"),\n  mimeType: \"text/plain\",\n  fileName: fileName\n};\n\n// =======================\n// 8. 返回给 Gmail 节点\n// =======================\nreturn {\n  json: {\n    message: \"Formatted SQL file generated\",\n    binary_keys: Object.keys(binary)\n  },\n  binary: binary\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        288
+      ],
+      "id": "9dba9750-8bc6-48cc-a36c-5adaf39937a7",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "sendTo": "beckyliu.2021219@gmail.com",
+        "subject": "=n8n sql for Campaign Questions & Metrics",
+        "message": "=SQL files attached.",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "sql_0"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1056,
+        288
+      ],
+      "id": "2ba9d8b9-180a-4117-8cd3-bc962d41fd6c",
+      "name": "Send a message",
+      "webhookId": "f72f7129-4441-4126-86d1-45cf3f73d467",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Czl35sMQ2FvYCcZD",
+          "name": "Gmail account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Questions&Metrics Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Questions&Metrics Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "sql Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Questions&Metrics Agent": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Questions&Metrics Output": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "site_data_database": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "keyword_data_database": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "site_data_database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "keyword_data_database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Questions&Metrics Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "sql Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sql Agent": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "62272155-7e7c-4911-9c1b-1bd38a3ebc51",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "44ffdaad646e4340fa37af7ab861bb939f12d428257f8acb6cd21a5c7039181a"
+  },
+  "id": "NehBZI50E1lt4grf",
+  "tags": []
+}
